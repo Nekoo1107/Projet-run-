@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { streamChat, getChatHealth } from '../api.js';
 import LiveVoice from './LiveVoice.jsx';
+import VoiceCoach from './VoiceCoach.jsx';
 
 const SUGGESTIONS = [
   'Est-ce que je progresse ?',
@@ -83,11 +84,16 @@ export default function ChatView() {
           💬 Texte
         </button>
         <button className={mode === 'voice' ? 'on' : ''} onClick={() => setMode('voice')}>
-          🎙 Vocal (Live)
+          🎙 Vocal
+        </button>
+        <button className={mode === 'live' ? 'on' : ''} onClick={() => setMode('live')}>
+          ⚡ Live (exp.)
         </button>
       </div>
 
       {mode === 'voice' ? (
+        <VoiceCoach />
+      ) : mode === 'live' ? (
         <LiveVoice />
       ) : (
         <>
