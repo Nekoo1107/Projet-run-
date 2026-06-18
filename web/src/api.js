@@ -51,6 +51,16 @@ export const getHealthFlags = () => req('/api/adaptation/health');
 export const reportPain = (body) => req('/api/adaptation/health', { method: 'POST', body });
 export const resolvePain = () => req('/api/adaptation/health/resolve', { method: 'POST' });
 
+// --- health metrics / correlations / COROS (Phase 6) ---
+const H = '/api/health-metrics';
+export const getCorosStatus = () => req(`${H}/coros`);
+export const syncCoros = () => req(`${H}/coros/sync`, { method: 'POST' });
+export const getHealthMetrics = (days = 60) => req(`${H}/metrics?days=${days}`);
+export const saveHealthMetric = (body) => req(`${H}/metrics`, { method: 'POST', body });
+export const deleteHealthMetric = (date) => req(`${H}/metrics/${date}`, { method: 'DELETE' });
+export const getCorrelations = (days = 120) => req(`${H}/correlations?days=${days}`);
+export const getHealthAlerts = () => req(`${H}/alerts`);
+
 // --- chat coach (Phase 4), streamed text ---
 export const getChatHealth = () => req('/api/chat/health');
 

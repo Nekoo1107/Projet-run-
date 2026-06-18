@@ -8,6 +8,7 @@ import planRouter from './routes/plan.js';
 import analyticsRouter from './routes/analytics.js';
 import chatRouter from './routes/chat.js';
 import adaptationRouter from './routes/adaptation.js';
+import healthRouter from './routes/health.js';
 
 initDb();
 
@@ -22,6 +23,7 @@ app.use('/api/plan', planRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/chat', chatRouter);
 app.use('/api/adaptation', adaptationRouter);
+app.use('/api/health-metrics', healthRouter);
 
 // Centralized error handler.
 app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars

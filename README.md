@@ -12,7 +12,7 @@ Construit par phases. **Tu es a la Phase 1.**
 | **3** | Graphe allure-a-FC + volume vs cible + detection de tendance | ✅ |
 | **4** | Chat IA (API Anthropic) avec mes donnees en contexte | ✅ ici |
 | **5** | Moteur d'adaptation temps reel (regles + propositions IA) | ✅ ici |
-| 6 | Module COROS (HRV/sommeil/recup) + correlations + alertes | a venir |
+| **6** | Module COROS (HRV/sommeil/recup) + correlations + alertes | ✅ ici |
 
 ## Stack
 
@@ -119,10 +119,18 @@ Onglet **Adaptation** : un moteur de règles **déterministe** analyse ta semain
 
 Les ajustements acceptés deviennent des **overrides** (la vue Plan affiche la cible adaptée + le plan d'origine). « Tout réinitialiser » revient au plan de référence. Pour une analyse en langage naturel, l'onglet Coach IA lit les mêmes données.
 
+## Phase 6 — Santé, corrélations & alertes
+
+Onglet **Santé** :
+
+- **Module COROS branchable mais optionnel** : l'API COROS exige un accès partenaire (pas garanti), donc l'app n'en dépend pas. Le point d'intégration est prêt (`server/src/services/coros.js`, vars `COROS_*`) ; en attendant, tu **saisis à la main** HRV / FC repos / sommeil / récup / VO2max.
+- **Corrélations** entre tes métriques santé et tes runs : chaleur → FC (dérive thermique), sommeil → efficacité aérobie, HRV → volume hebdo, récup → volume hebdo (coefficient de Pearson + interprétation, dès ~4 points).
+- **Alertes** : volume qui monte > 15 %/sem, deload qui approche, FC élevée récurrente sur les runs.
+
 ## Notes
 
 - **Scopes Strava** demandes : `read,activity:read_all` (lecture des activites, y compris privees).
-- Le **plan de reference** (`plan/...md`) n'est jamais modifie ; le suivi (statuts, date de depart, overrides d'adaptation, flags de douleur) est stocke a cote dans SQLite.
+- Le **plan de reference** (`plan/...md`) n'est jamais modifie ; le suivi (statuts, date de depart, overrides d'adaptation, flags de douleur, metriques sante) est stocke a cote dans SQLite.
 - L'access token Strava expire toutes les ~6 h ; le backend le **rafraichit automatiquement** via le refresh token.
 - Les runs incluent les types `Run`, `TrailRun`, `VirtualRun`. Tes activites COROS deja synchronisees vers Strava remontent donc ici sans l'API COROS.
 - **Securite** : aucune cle en dur, tout en variables d'environnement ; tokens stockes dans `server/data/app.db` (git-ignore), exposes nulle part au frontend.

@@ -57,6 +57,18 @@ export function initDb() {
       created_at   INTEGER NOT NULL,
       resolved_at  INTEGER
     );
+
+    -- Phase 6: daily health metrics (manual entry, or COROS if connected later)
+    CREATE TABLE IF NOT EXISTS health_metrics (
+      date         TEXT PRIMARY KEY,   -- YYYY-MM-DD
+      hrv          REAL,
+      resting_hr   REAL,
+      sleep_hours  REAL,
+      recovery     REAL,
+      vo2max       REAL,
+      source       TEXT NOT NULL DEFAULT 'manual',
+      updated_at   INTEGER NOT NULL
+    );
   `);
   console.log(`[db] SQLite ready at ${dbPath}`);
 }
@@ -152,6 +164,51 @@ export function resolveHealthFlags() {
   db.prepare(`UPDATE health_flags SET status = 'resolved', resolved_at = ? WHERE status = 'active'`).run(
     Math.floor(Date.now() / 1000)
   );
+}
+
+// --- Phase 6: daily health metrics ---
+export function getHealthMetrics(sinceDate = null) {
+  const rows = sinceDate
+    ? db.prepare('SELECT * FROM health_metrics WHERE date >= ? ORDER BY date').all(sinceDate)
+    : db.prepare('SELECT * FROM health_metrics ORDER BY date').all();
+  return rows.map((r) => ({
+    date: r.date,
+    hrv: r.hrv,
+    restingHr: r.resting_hr,
+    sleepHours: r.sleep_hours,
+    recovery: r.recovery,
+    vo2max: r.vo2max,
+    source: r.source,
+  }));
+}
+
+/** Upsert a day's metrics; null fields keep any existing value (partial update). */
+export function upsertHealthMetric(date, { hrv = null, restingHr = null, sleepHours = null, recovery = null, vo2max = null, source = 'manual' }) {
+  db.prepare(
+    `INSERT INTO health_metrics (date, hrv, resting_hr, sleep_hours, recovery, vo2max, source, updated_at)
+     VALUES (@date, @hrv, @resting_hr, @sleep_hours, @recovery, @vo2max, @source, @updated_at)
+     ON CONFLICT(date) DO UPDATE SET
+       hrv = COALESCE(excluded.hrv, health_metrics.hrv),
+       resting_hr = COALESCE(excluded.resting_hr, health_metrics.resting_hr),
+       sleep_hours = COALESCE(excluded.sleep_hours, health_metrics.sleep_hours),
+       recovery = COALESCE(excluded.recovery, health_metrics.recovery),
+       vo2max = COALESCE(excluded.vo2max, health_metrics.vo2max),
+       source = excluded.source,
+       updated_at = excluded.updated_at`
+  ).run({
+    date,
+    hrv,
+    resting_hr: restingHr,
+    sleep_hours: sleepHours,
+    recovery,
+    vo2max,
+    source,
+    updated_at: Math.floor(Date.now() / 1000),
+  });
+}
+
+export function deleteHealthMetric(date) {
+  db.prepare('DELETE FROM health_metrics WHERE date = ?').run(date);
 }
 
 /**

@@ -6,6 +6,7 @@ import PlanView from './components/PlanView.jsx';
 import StatsView from './components/StatsView.jsx';
 import ChatView from './components/ChatView.jsx';
 import AdaptationView from './components/AdaptationView.jsx';
+import HealthView from './components/HealthView.jsx';
 
 const BANNERS = {
   connected: { kind: 'ok', text: 'Strava connecte ✓' },
@@ -47,7 +48,7 @@ export default function App() {
           <span className="logo">🏃</span>
           <div>
             <h1>Projet Run</h1>
-            <p className="subtitle">Suivi d'entrainement — Phase 2</p>
+            <p className="subtitle">Suivi d'entrainement + coach IA</p>
           </div>
         </div>
         <ConnectStrava status={status} onChange={refreshStatus} />
@@ -62,6 +63,9 @@ export default function App() {
         </button>
         <button className={tab === 'stats' ? 'tab active' : 'tab'} onClick={() => setTab('stats')}>
           Stats
+        </button>
+        <button className={tab === 'health' ? 'tab active' : 'tab'} onClick={() => setTab('health')}>
+          Santé
         </button>
         <button className={tab === 'coach' ? 'tab active' : 'tab'} onClick={() => setTab('coach')}>
           Coach IA
@@ -87,6 +91,7 @@ export default function App() {
         {!status.loading && !status.unreachable && tab === 'plan' && <PlanView status={status} />}
         {!status.loading && !status.unreachable && tab === 'adapt' && <AdaptationView />}
         {!status.loading && !status.unreachable && tab === 'stats' && <StatsView status={status} />}
+        {!status.loading && !status.unreachable && tab === 'health' && <HealthView />}
         {!status.loading && !status.unreachable && tab === 'coach' && <ChatView />}
       </main>
     </div>

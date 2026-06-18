@@ -146,6 +146,7 @@ function mapRunSummary(a) {
     max_heartrate: a.max_heartrate ?? null,
     total_elevation_gain_m: a.total_elevation_gain ?? null,
     average_cadence: a.average_cadence ?? null, // one-leg rpm (x2 = spm)
+    average_temp: a.average_temp ?? null, // °C (when the device records it)
     has_heartrate: a.has_heartrate ?? false,
   };
 }
