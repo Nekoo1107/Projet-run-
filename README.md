@@ -1,9 +1,10 @@
 # Projet Run — suivi d'entrainement course a pied + coach IA
 
 Application personnelle (mono-utilisateur) pour suivre mon entrainement, rapatrier mes
-donnees Strava, suivre un plan sur 12 semaines, et (plus tard) discuter avec un coach IA.
+donnees Strava, suivre un plan sur 12 semaines, analyser mes tendances, adapter le plan en
+temps reel, et discuter avec un coach IA ancre dans mes donnees.
 
-Construit par phases. **Tu es a la Phase 1.**
+Construit par phases — **les 6 phases sont implementees.**
 
 | Phase | Contenu | Etat |
 |---|---|---|
