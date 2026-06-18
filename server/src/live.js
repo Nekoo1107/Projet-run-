@@ -41,30 +41,43 @@ export function attachLive(server) {
       send(ws, { type: 'status', status: 'connecting' });
       const data = await gatherData();
       const systemInstruction = `${SYSTEM_RULES}\n\n${VOICE_INSTRUCTION}\n\n===== DONNÉES DE L'UTILISATEUR =====\n${buildContext(data)}`;
-      const ai = new GoogleGenAI({ apiKey: config.geminiApiKey });
+      // The Live API is served under v1alpha for most models.
+      const ai = new GoogleGenAI({ apiKey: config.geminiApiKey, httpOptions: { apiVersion: 'v1alpha' } });
+      const AUDIO = Modality?.AUDIO ?? 'AUDIO';
+      console.log(`[live] ouverture session Gemini Live (modele=${LIVE_MODEL})…`);
 
       session = await ai.live.connect({
         model: LIVE_MODEL,
         config: {
-          responseModalities: [Modality.AUDIO],
+          responseModalities: [AUDIO],
           systemInstruction,
           inputAudioTranscription: {},
           outputAudioTranscription: {},
           speechConfig: { languageCode: 'fr-FR' },
         },
         callbacks: {
-          onopen: () => send(ws, { type: 'status', status: 'live' }),
+          onopen: () => {
+            console.log('[live] session ouverte ✓');
+            send(ws, { type: 'status', status: 'live' });
+          },
           onmessage: (msg) => relay(ws, msg),
-          onerror: (e) => send(ws, { type: 'error', message: `Gemini Live: ${e?.message || e}` }),
-          onclose: () => {
+          onerror: (e) => {
+            console.error('[live] erreur session Gemini:', e?.message || e);
+            send(ws, { type: 'error', message: `Gemini Live: ${e?.message || e}` });
+          },
+          onclose: (e) => {
+            const reason = e?.reason || e?.message || '';
+            console.log(`[live] session fermee par Gemini. code=${e?.code ?? '?'} reason="${reason}"`);
+            send(ws, { type: 'closed', code: e?.code, reason });
             if (!closed) try { ws.close(); } catch { /* ignore */ }
           },
         },
       });
     } catch (e) {
+      console.error('[live] connexion Gemini Live ECHOUEE:', e?.message || e);
       send(ws, {
         type: 'error',
-        message: `Connexion Gemini Live échouée (${e.message}). Le modèle « ${LIVE_MODEL} » n'est peut-être pas disponible sur ta clé/région — essaie un autre via GEMINI_LIVE_MODEL.`,
+        message: `Connexion Gemini Live échouée : ${e.message}. Le modèle « ${LIVE_MODEL} » n'est peut-être pas dispo sur ta clé/région — essaie un autre via GEMINI_LIVE_MODEL (regarde le terminal serveur pour le détail).`,
       });
       try { ws.close(); } catch { /* ignore */ }
       return;
