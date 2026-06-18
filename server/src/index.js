@@ -37,6 +37,16 @@ app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
 const server = http.createServer(app);
 attachLive(server); // Gemini Live voice relay on ws://.../api/live
 
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n[server] ⛔ Port ${config.port} deja utilise : un autre serveur tourne deja.`);
+    console.error('[server]    Arrete-le puis relance :  mac/linux -> pkill -f node   |   windows -> taskkill /IM node.exe /F\n');
+  } else {
+    console.error('[server]', err);
+  }
+  process.exit(1);
+});
+
 server.listen(config.port, () => {
   console.log(`[server] API on http://localhost:${config.port}`);
   console.log(`[server] fichier .env : ${config.envPath} ${config.envFound ? '(trouve)' : '(INTROUVABLE)'}`);

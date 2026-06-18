@@ -18,6 +18,8 @@ const send = (ws, obj) => {
 /** Attach the Gemini Live voice relay at ws://<host>/api/live. */
 export function attachLive(server) {
   const wss = new WebSocketServer({ server, path: '/api/live' });
+  // Avoid an unhandled 'error' re-emit when the shared HTTP server fails to bind.
+  wss.on('error', (e) => console.error('[live] WS server:', e?.message || e));
 
   wss.on('connection', async (ws) => {
     if (!geminiConfigured()) {
