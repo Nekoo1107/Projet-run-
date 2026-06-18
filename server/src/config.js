@@ -21,9 +21,15 @@ export const config = {
     `http://localhost:${PORT}/api/auth/strava/callback`,
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
   dbPath: process.env.DB_PATH || './data/app.db',
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
 };
 
 /** True once Strava credentials are present. */
 export function stravaConfigured() {
   return Boolean(config.stravaClientId && config.stravaClientSecret);
+}
+
+/** True once the Anthropic API key is present (Phase 4 chat). */
+export function anthropicConfigured() {
+  return Boolean(config.anthropicApiKey);
 }

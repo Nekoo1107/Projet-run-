@@ -41,3 +41,31 @@ export const setSessionStatus = (id, body) =>
 
 // --- analytics (Phase 3) ---
 export const getAnalytics = (days = 120) => req(`/api/analytics?days=${days}`);
+
+// --- chat coach (Phase 4), streamed text ---
+export const getChatHealth = () => req('/api/chat/health');
+
+export async function streamChat(messages, onDelta, signal) {
+  const res = await fetch(`${API}/api/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages }),
+    signal,
+  });
+  if (!res.ok || !res.body) {
+    let detail = '';
+    try {
+      detail = (await res.json()).error || '';
+    } catch {
+      /* ignore */
+    }
+    throw new Error(detail || `HTTP ${res.status}`);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    onDelta(decoder.decode(value, { stream: true }));
+  }
+}

@@ -9,8 +9,8 @@ Construit par phases. **Tu es a la Phase 1.**
 |---|---|---|
 | **1** | Setup + OAuth Strava + affichage des 10 derniers runs (liste + splits/FC) | ✅ |
 | **2** | Parsing du plan 12 semaines + vue semaine + check-off + matching Strava + adherence | ✅ ici |
-| 3 | Graphe allure-a-FC + volume vs cible + detection de tendance | a venir |
-| 4 | Chat IA (API Anthropic) avec mes donnees en contexte | a venir |
+| **3** | Graphe allure-a-FC + volume vs cible + detection de tendance | ✅ |
+| **4** | Chat IA (API Anthropic) avec mes donnees en contexte | ✅ ici |
 | 5 | Moteur d'adaptation temps reel (regles + propositions IA) | a venir |
 | 6 | Module COROS (HRV/sommeil/recup) + correlations + alertes | a venir |
 
@@ -96,6 +96,17 @@ Onglet **« Plan 12 semaines »** :
 5. **Adherence** : volume reel vs cible, par **semaine** et par **phase** (barres de progression).
 
 > Le plan est genere a partir de `plan/plan_12_semaines_machine.md` (les tables de chaque phase + le schema de semaine type). Les distances marquees `≈` sont estimees pour atteindre le volume hebdo cible (les jours easy non chiffres dans le plan) ; le **volume cible hebdo** reste, lui, exactement celui du document.
+
+## Phase 3 — Stats
+
+Onglet **Stats** (Strava connecte requis) : allure à FC comparable (~145 bpm) dans le temps avec verdict **progression / stagnation / régression**, volume hebdo réel, efficacité aérobie. Sélecteur de période 60/120/180 j. Graphes SVG maison (aucune dépendance).
+
+## Phase 4 — Coach IA
+
+Onglet **Coach IA** : chat avec Claude (`claude-opus-4-8`, réponses **streamées**). À chaque message, le backend envoie en contexte **ton plan + ta semaine en cours + tes runs Strava récents + tes tendances**, et impose les règles de coaching non négociables. Pose des questions du type « est-ce que je progresse ? », « pourquoi ma FC a dérivé hier ? ».
+
+- Nécessite `ANTHROPIC_API_KEY` dans `server/.env` (depuis https://console.anthropic.com/). Sans clé, l'onglet l'indique.
+- La clé n'est **jamais** en dur ni exposée au frontend ; le SDK la lit dans l'environnement côté serveur.
 
 ## Notes
 
