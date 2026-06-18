@@ -7,8 +7,8 @@ Construit par phases. **Tu es a la Phase 1.**
 
 | Phase | Contenu | Etat |
 |---|---|---|
-| **1** | Setup + OAuth Strava + affichage des 10 derniers runs (liste + splits/FC) | ✅ ici |
-| 2 | Parsing du plan 12 semaines + vue semaine + check-off + matching Strava | a venir |
+| **1** | Setup + OAuth Strava + affichage des 10 derniers runs (liste + splits/FC) | ✅ |
+| **2** | Parsing du plan 12 semaines + vue semaine + check-off + matching Strava + adherence | ✅ ici |
 | 3 | Graphe allure-a-FC + volume vs cible + detection de tendance | a venir |
 | 4 | Chat IA (API Anthropic) avec mes donnees en contexte | a venir |
 | 5 | Moteur d'adaptation temps reel (regles + propositions IA) | a venir |
@@ -85,9 +85,22 @@ Puis ouvre **http://localhost:5173**.
 
 ---
 
+## Phase 2 — le plan 12 semaines
+
+Onglet **« Plan 12 semaines »** :
+
+1. **Date de depart** : choisis le lundi de la semaine 1 (la date est automatiquement calee sur le lundi). Chaque seance est alors alignee sur le calendrier.
+2. **Vue semaine** : selecteur S1→S12 (les deloads S5 & S9 sont en pointilles, la semaine en cours a un point vert). Chaque jour affiche la seance prevue : type (easy/seuil/VO2max/long/escalade/repos), distance & allure & zone FC cibles, + notes (strides, renfo du soir, double, finition tempo…).
+3. **Check-off** : pour chaque seance, bouton **Faite / Modifiee / Sautee**.
+4. **Matching Strava** : pour chaque jour de course, le run Strava correspondant (meme date) est rapatrie automatiquement et affiche en **reel vs prevu** (distance, allure, FC).
+5. **Adherence** : volume reel vs cible, par **semaine** et par **phase** (barres de progression).
+
+> Le plan est genere a partir de `plan/plan_12_semaines_machine.md` (les tables de chaque phase + le schema de semaine type). Les distances marquees `≈` sont estimees pour atteindre le volume hebdo cible (les jours easy non chiffres dans le plan) ; le **volume cible hebdo** reste, lui, exactement celui du document.
+
 ## Notes
 
 - **Scopes Strava** demandes : `read,activity:read_all` (lecture des activites, y compris privees).
+- Le **plan de reference** (`plan/...md`) n'est jamais modifie ; le suivi (statuts de seances, date de depart) est stocke a cote dans SQLite.
 - L'access token Strava expire toutes les ~6 h ; le backend le **rafraichit automatiquement** via le refresh token.
 - Les runs incluent les types `Run`, `TrailRun`, `VirtualRun`. Tes activites COROS deja synchronisees vers Strava remontent donc ici sans l'API COROS.
 - **Securite** : aucune cle en dur, tout en variables d'environnement ; tokens stockes dans `server/data/app.db` (git-ignore), exposes nulle part au frontend.

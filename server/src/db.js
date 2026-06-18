@@ -25,8 +25,71 @@ export function initDb() {
       athlete_json  TEXT,
       updated_at    INTEGER NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS settings (
+      key   TEXT PRIMARY KEY,
+      value TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS session_status (
+      session_id   TEXT PRIMARY KEY,   -- e.g. "w1-mon"
+      status       TEXT NOT NULL,      -- done | modified | skipped
+      strava_id    INTEGER,            -- manually linked run (optional)
+      note         TEXT,
+      updated_at   INTEGER NOT NULL
+    );
   `);
   console.log(`[db] SQLite ready at ${dbPath}`);
+}
+
+// --- settings (key/value) ---
+export function getSetting(key) {
+  const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key);
+  return row ? row.value : null;
+}
+
+export function setSetting(key, value) {
+  db.prepare(
+    `INSERT INTO settings (key, value) VALUES (?, ?)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+  ).run(key, value);
+}
+
+// --- per-session check-off status ---
+export function getAllStatuses() {
+  const rows = db.prepare('SELECT * FROM session_status').all();
+  const map = {};
+  for (const r of rows) {
+    map[r.session_id] = {
+      status: r.status,
+      stravaId: r.strava_id ?? null,
+      note: r.note ?? null,
+      updatedAt: r.updated_at,
+    };
+  }
+  return map;
+}
+
+export function setSessionStatus(sessionId, { status, stravaId = null, note = null }) {
+  if (!status) {
+    db.prepare('DELETE FROM session_status WHERE session_id = ?').run(sessionId);
+    return;
+  }
+  db.prepare(
+    `INSERT INTO session_status (session_id, status, strava_id, note, updated_at)
+     VALUES (@session_id, @status, @strava_id, @note, @updated_at)
+     ON CONFLICT(session_id) DO UPDATE SET
+       status = excluded.status,
+       strava_id = excluded.strava_id,
+       note = excluded.note,
+       updated_at = excluded.updated_at`
+  ).run({
+    session_id: sessionId,
+    status,
+    strava_id: stravaId,
+    note,
+    updated_at: Math.floor(Date.now() / 1000),
+  });
 }
 
 /**

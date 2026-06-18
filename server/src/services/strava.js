@@ -107,6 +107,22 @@ export async function listRecentRuns(limit = 10) {
     .map(mapRunSummary);
 }
 
+/**
+ * Runs whose start falls within [afterEpoch, beforeEpoch) (seconds).
+ * Used to match planned sessions against actual activities by date.
+ */
+export async function listRunsBetween(afterEpoch, beforeEpoch) {
+  const activities = await stravaGet('/athlete/activities', {
+    after: afterEpoch,
+    before: beforeEpoch,
+    per_page: 200,
+    page: 1,
+  });
+  return activities
+    .filter((a) => RUN_TYPES.has(a.sport_type) || RUN_TYPES.has(a.type))
+    .map(mapRunSummary);
+}
+
 /** Full detail for one activity, including per-km splits. */
 export async function getActivityDetail(id) {
   const a = await stravaGet(`/activities/${id}`, { include_all_efforts: false });

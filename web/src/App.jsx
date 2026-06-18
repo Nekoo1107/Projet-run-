@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { getStatus, getActivities } from './api.js';
+import { getStatus } from './api.js';
 import ConnectStrava from './components/ConnectStrava.jsx';
-import ActivityList from './components/ActivityList.jsx';
-import ActivityDetail from './components/ActivityDetail.jsx';
+import RunsView from './components/RunsView.jsx';
+import PlanView from './components/PlanView.jsx';
 
 const BANNERS = {
   connected: { kind: 'ok', text: 'Strava connecte ✓' },
@@ -12,12 +12,9 @@ const BANNERS = {
 
 export default function App() {
   const [status, setStatus] = useState({ loading: true });
-  const [activities, setActivities] = useState(null);
-  const [activitiesError, setActivitiesError] = useState(null);
-  const [selectedId, setSelectedId] = useState(null);
   const [banner, setBanner] = useState(null);
+  const [tab, setTab] = useState('plan');
 
-  // Pick up ?strava=... from the OAuth redirect, show a banner, clean the URL.
   useEffect(() => {
     const param = new URLSearchParams(window.location.search).get('strava');
     if (param && BANNERS[param]) {
@@ -40,16 +37,6 @@ export default function App() {
     refreshStatus();
   }, []);
 
-  // Load runs once connected.
-  useEffect(() => {
-    if (!status.connected) return;
-    setActivities(null);
-    setActivitiesError(null);
-    getActivities(10)
-      .then(setActivities)
-      .catch((e) => setActivitiesError(e.message));
-  }, [status.connected]);
-
   return (
     <div className="app">
       <header className="topbar">
@@ -57,11 +44,20 @@ export default function App() {
           <span className="logo">🏃</span>
           <div>
             <h1>Projet Run</h1>
-            <p className="subtitle">Suivi d'entrainement — Phase 1</p>
+            <p className="subtitle">Suivi d'entrainement — Phase 2</p>
           </div>
         </div>
         <ConnectStrava status={status} onChange={refreshStatus} />
       </header>
+
+      <nav className="tabs">
+        <button className={tab === 'plan' ? 'tab active' : 'tab'} onClick={() => setTab('plan')}>
+          Plan 12 semaines
+        </button>
+        <button className={tab === 'runs' ? 'tab active' : 'tab'} onClick={() => setTab('runs')}>
+          Mes runs
+        </button>
+      </nav>
 
       {banner && <div className={`banner ${banner.kind}`}>{banner.text}</div>}
 
@@ -75,41 +71,9 @@ export default function App() {
           </div>
         )}
 
-        {!status.loading && !status.unreachable && !status.connected && (
-          <div className="card empty">
-            <h2>Connecte ton compte Strava</h2>
-            <p className="muted">
-              Une fois connecte, tes 10 derniers runs s'afficheront ici avec leurs splits.
-            </p>
-            {status.configured === false && (
-              <p className="warn-text">
-                ⚠️ Les cles Strava ne sont pas configurees cote serveur. Renseigne{' '}
-                <code>server/.env</code> (voir README).
-              </p>
-            )}
-          </div>
-        )}
-
-        {status.connected && (
-          <section className="runs">
-            <h2>10 derniers runs</h2>
-            {activitiesError && (
-              <div className="card empty">
-                <p className="warn-text">Erreur: {activitiesError}</p>
-              </div>
-            )}
-            {!activities && !activitiesError && <p className="muted">Recuperation depuis Strava…</p>}
-            {activities && activities.length === 0 && (
-              <p className="muted">Aucun run trouve sur ton compte Strava.</p>
-            )}
-            {activities && activities.length > 0 && (
-              <ActivityList activities={activities} onSelect={setSelectedId} />
-            )}
-          </section>
-        )}
+        {!status.loading && !status.unreachable && tab === 'runs' && <RunsView status={status} />}
+        {!status.loading && !status.unreachable && tab === 'plan' && <PlanView status={status} />}
       </main>
-
-      {selectedId && <ActivityDetail id={selectedId} onClose={() => setSelectedId(null)} />}
     </div>
   );
 }
