@@ -24,8 +24,13 @@ app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
 
 app.listen(config.port, () => {
   console.log(`[server] API on http://localhost:${config.port}`);
-  console.log(`[server] CORS allowed origin: ${config.frontendUrl}`);
+  console.log(`[server] fichier .env : ${config.envPath} ${config.envFound ? '(trouve)' : '(INTROUVABLE)'}`);
+  console.log(
+    `[server] STRAVA_CLIENT_ID : ${config.stravaClientId ? 'OK' : 'MANQUANT'}` +
+      ` | STRAVA_CLIENT_SECRET : ${config.stravaClientSecret ? 'OK' : 'MANQUANT'}`
+  );
+  console.log(`[server] CORS origin : ${config.frontendUrl}`);
   if (!stravaConfigured()) {
-    console.log('[server] ⚠️  Strava keys missing — fill server/.env to enable OAuth.');
+    console.log('[server] ⚠️  Cles Strava manquantes — verifie le fichier .env indique ci-dessus.');
   }
 });
