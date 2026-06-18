@@ -38,3 +38,6 @@ export const setPlanStartDate = (startDate) =>
   req('/api/plan/settings', { method: 'PUT', body: { startDate } });
 export const setSessionStatus = (id, body) =>
   req(`/api/plan/session/${id}/status`, { method: 'POST', body });
+
+// --- analytics (Phase 3) ---
+export const getAnalytics = (days = 120) => req(`/api/analytics?days=${days}`);

@@ -5,6 +5,7 @@ import { initDb } from './db.js';
 import authRouter from './routes/auth.js';
 import activitiesRouter from './routes/activities.js';
 import planRouter from './routes/plan.js';
+import analyticsRouter from './routes/analytics.js';
 
 initDb();
 
@@ -16,6 +17,7 @@ app.get('/api/health', (req, res) => res.json({ ok: true }));
 app.use('/api/auth', authRouter);
 app.use('/api/activities', activitiesRouter);
 app.use('/api/plan', planRouter);
+app.use('/api/analytics', analyticsRouter);
 
 // Centralized error handler.
 app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
