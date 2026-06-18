@@ -33,7 +33,14 @@ export async function gatherData() {
       /* Strava unavailable — context degrades but chat still works */
     }
   }
-  const data = { plan, startDate, runs, analytics };
+  let clientContext = null;
+  try {
+    const raw = getSetting('client_context');
+    if (raw) clientContext = JSON.parse(raw);
+  } catch {
+    /* ignore */
+  }
+  const data = { plan, startDate, runs, analytics, clientContext };
   ctxCache = { at: Date.now(), data };
   return data;
 }
@@ -46,8 +53,16 @@ function currentWeekNumber(startDate) {
   return wk >= 1 && wk <= 12 ? wk : null;
 }
 
-export function buildContext({ plan, startDate, runs, analytics }) {
+export function buildContext({ plan, startDate, runs, analytics, clientContext }) {
   const lines = [];
+
+  // Today's context (local time + weather) so Jarvis can mention it.
+  if (clientContext) {
+    lines.push('## Aujourd’hui');
+    if (clientContext.localTime) lines.push(`- Date/heure locale : ${clientContext.localTime}`);
+    if (clientContext.weather) lines.push(`- Météo : ${clientContext.weather} (adapte tes conseils à la chaleur/au froid)`);
+    lines.push('');
+  }
 
   // Plan overview
   lines.push('## Plan 12 semaines (référence)');

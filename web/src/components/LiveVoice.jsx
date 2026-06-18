@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import JarvisOrb from './JarvisOrb.jsx';
 
 const API = import.meta.env.VITE_API_BASE || 'http://localhost:3001';
 const WS_URL = `${API.replace(/^http/, 'ws')}/api/live`;
@@ -24,10 +25,10 @@ export default function LiveVoice() {
   const [error, setError] = useState(null);
   const [transcript, setTranscript] = useState([]);
   const [log, setLog] = useState([]);
+  const [speaking, setSpeaking] = useState(false);
   const ref = useRef({});
 
-  const addLog = (s) =>
-    setLog((l) => [...l.slice(-12), `${new Date().toLocaleTimeString('fr-FR')} ${s}`]);
+  const addLog = (s) => setLog((l) => [...l.slice(-12), `${new Date().toLocaleTimeString('fr-FR')} ${s}`]);
 
   function pushText(who, text) {
     setTranscript((prev) => {
@@ -39,11 +40,32 @@ export default function LiveVoice() {
     });
   }
 
-  // Tear down audio/ws without touching React status.
+  // Real audio amplitude (0..1) from the coach's output + your mic.
+  const getLevel = useCallback(() => {
+    const st = ref.current;
+    let out = 0;
+    if (st.outAnalyser && st.outBuf) {
+      st.outAnalyser.getByteTimeDomainData(st.outBuf);
+      let sum = 0;
+      for (let i = 0; i < st.outBuf.length; i++) {
+        const v = (st.outBuf[i] - 128) / 128;
+        sum += v * v;
+      }
+      out = Math.sqrt(sum / st.outBuf.length) * 1.9;
+    }
+    st.inLevel = (st.inLevel || 0) * 0.85;
+    return Math.min(1, Math.max(out, st.inLevel));
+  }, []);
+
+  // Throttled "coach is speaking" detection for orb colour.
+  useEffect(() => {
+    const id = setInterval(() => setSpeaking((ref.current.lastAudio || 0) > Date.now() - 280), 140);
+    return () => clearInterval(id);
+  }, []);
+
   function teardown() {
     const st = ref.current;
-    try { st.proc?.disconnect(); st.source?.disconnect(); } catch { /* */ }
-    try { st.silent?.disconnect(); } catch { /* */ }
+    try { st.proc?.disconnect(); st.source?.disconnect(); st.silent?.disconnect(); } catch { /* */ }
     try { st.stream?.getTracks().forEach((t) => t.stop()); } catch { /* */ }
     try { if (st.ws) { st.ws.onclose = null; st.ws.close(); } } catch { /* */ }
     try { st.inputCtx?.close(); } catch { /* */ }
@@ -79,15 +101,24 @@ export default function LiveVoice() {
       const AC = window.AudioContext || window.webkitAudioContext;
       const inputCtx = new AC({ sampleRate: 16000 });
       const outputCtx = new AC({ sampleRate: 24000 });
+      const outAnalyser = outputCtx.createAnalyser();
+      outAnalyser.fftSize = 256;
+      outAnalyser.connect(outputCtx.destination);
       addLog(`WS → ${WS_URL}`);
       const ws = new WebSocket(WS_URL);
-      Object.assign(ref.current, { stream, inputCtx, outputCtx, ws });
+      Object.assign(ref.current, {
+        stream,
+        inputCtx,
+        outputCtx,
+        outAnalyser,
+        outBuf: new Uint8Array(outAnalyser.frequencyBinCount),
+        ws,
+      });
 
-      // If we never reach "live" within 10s, say so instead of hanging.
       ref.current.timer = setTimeout(() => {
         if (!ref.current.live && !ref.current.errored)
-          fail("Pas de réponse du serveur vocal en 10 s. Vérifie que le backend tourne et que GEMINI_API_KEY est en place.");
-      }, 10000);
+          fail('Pas de réponse du serveur vocal en 12 s. Vérifie le backend et GEMINI_API_KEY.');
+      }, 12000);
 
       ws.onmessage = (ev) => {
         let m;
@@ -98,9 +129,7 @@ export default function LiveVoice() {
         } else if (m.type === 'error') {
           fail(m.message);
         } else if (m.type === 'closed') {
-          if (!ref.current.live) {
-            fail(`Session vocale fermée immédiatement${m.reason ? ` (${m.reason})` : ''}. Le modèle Live n'est probablement pas disponible sur ta clé — regarde les lignes [live] dans le terminal du serveur, et dis-le-moi.`);
-          }
+          if (!ref.current.live) fail(`Session fermée${m.reason ? ` (${m.reason})` : ''}.`);
         } else if (m.type === 'audio') {
           playChunk(m.data);
         } else if (m.type === 'text') {
@@ -121,15 +150,18 @@ export default function LiveVoice() {
         const source = inputCtx.createMediaStreamSource(stream);
         const proc = inputCtx.createScriptProcessor(4096, 1, 1);
         const silent = inputCtx.createGain();
-        silent.gain.value = 0; // keep processor alive without echoing the mic
+        silent.gain.value = 0;
         proc.onaudioprocess = (e) => {
           if (ws.readyState !== WebSocket.OPEN) return;
           const f32 = e.inputBuffer.getChannelData(0);
+          let sum = 0;
           const i16 = new Int16Array(f32.length);
           for (let i = 0; i < f32.length; i++) {
             const s = Math.max(-1, Math.min(1, f32[i]));
+            sum += s * s;
             i16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
           }
+          ref.current.inLevel = Math.min(1, Math.sqrt(sum / f32.length) * 2.4);
           ws.send(JSON.stringify({ type: 'audio', data: abToB64(i16.buffer) }));
         };
         source.connect(proc);
@@ -138,7 +170,7 @@ export default function LiveVoice() {
         Object.assign(ref.current, { proc, source, silent });
       };
     } catch (e) {
-      fail(e.name === 'NotAllowedError' ? 'Micro refusé. Autorise le micro dans le navigateur (icône cadenas).' : e.message);
+      fail(e.name === 'NotAllowedError' ? 'Micro refusé. Autorise le micro (icône à gauche de la barre d’adresse).' : e.message);
     }
   }
 
@@ -147,11 +179,12 @@ export default function LiveVoice() {
     if (!st.outputCtx) return;
     const f32 = b64ToFloat32(b64);
     if (!f32.length) return;
+    st.lastAudio = Date.now();
     const buf = st.outputCtx.createBuffer(1, f32.length, 24000);
     buf.getChannelData(0).set(f32);
     const src = st.outputCtx.createBufferSource();
     src.buffer = buf;
-    src.connect(st.outputCtx.destination);
+    src.connect(st.outAnalyser || st.outputCtx.destination);
     const t = Math.max(st.outputCtx.currentTime, st.nextTime || 0);
     src.start(t);
     st.nextTime = t + buf.duration;
@@ -169,26 +202,17 @@ export default function LiveVoice() {
   useEffect(() => () => teardown(), []);
 
   const live = status === 'live';
+  const orbMode =
+    status === 'error' ? 'error' : status === 'connecting' ? 'thinking' : live ? (speaking ? 'speaking' : 'listening') : 'idle';
+  const label =
+    status === 'connecting' ? 'Connexion…' : live ? (speaking ? 'Jarvis parle…' : 'À l’écoute — parle !') : status === 'error' ? 'Échec' : 'Touche l’orbe pour parler';
+
   return (
     <div className="live">
-      <div className="live-center">
-        <button
-          className={`mic-btn ${live ? 'on' : ''}`}
-          onClick={live || status === 'connecting' ? stop : start}
-          disabled={status === 'connecting'}
-        >
-          {status === 'connecting' ? '…' : live ? '⏹' : '🎙'}
-        </button>
-        <p className="live-status">
-          {status === 'idle' && 'Appuie pour parler à ton coach'}
-          {status === 'connecting' && 'Connexion…'}
-          {live && 'À l’écoute — parle !'}
-          {status === 'error' && 'Échec'}
-        </p>
-        {error && <p className="warn-text small">{error}</p>}
-        {status === 'error' && (
-          <button className="btn ghost" onClick={start}>Réessayer</button>
-        )}
+      <div className="orb-stage">
+        <JarvisOrb getLevel={live ? getLevel : undefined} mode={orbMode} onClick={live || status === 'connecting' ? stop : start} />
+        <p className="orb-label">{label}</p>
+        {error && <p className="warn-text small orb-error">{error}</p>}
       </div>
 
       {transcript.length > 0 && (
@@ -199,17 +223,12 @@ export default function LiveVoice() {
         </div>
       )}
 
-      {log.length > 0 && (
-        <div className="live-log">
-          {log.map((l, i) => (
-            <div key={i}>{l}</div>
-          ))}
-        </div>
+      {log.length > 0 && status !== 'live' && (
+        <details className="live-debug">
+          <summary>journal technique</summary>
+          <div className="live-log">{log.map((l, i) => <div key={i}>{l}</div>)}</div>
+        </details>
       )}
-
-      <p className="muted small live-note">
-        Voix temps réel (Gemini Live). Marche le mieux sur <strong>Chrome</strong> ; autorise le micro.
-      </p>
     </div>
   );
 }

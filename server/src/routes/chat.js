@@ -2,12 +2,20 @@ import { Router } from 'express';
 import { chatProvider } from '../config.js';
 import { streamCoachReply } from '../services/coach.js';
 import { streamGeminiReply } from '../services/coachGemini.js';
+import { setSetting } from '../db.js';
 
 const router = Router();
 
 router.get('/health', (req, res) => {
   const provider = chatProvider();
   res.json({ configured: Boolean(provider), provider });
+});
+
+// Client-provided context (weather, local time) so the coach can reference it.
+router.post('/context', (req, res) => {
+  const { weather = null, localTime = null, tz = null } = req.body || {};
+  setSetting('client_context', JSON.stringify({ weather, localTime, tz }));
+  res.json({ ok: true });
 });
 
 // POST /api/chat  body: { messages: [{role, content}, ...] }  → streams text/plain

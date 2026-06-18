@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { streamChat } from '../api.js';
+import JarvisOrb from './JarvisOrb.jsx';
 
 const SR =
   typeof window !== 'undefined' ? window.SpeechRecognition || window.webkitSpeechRecognition : null;
@@ -161,26 +162,20 @@ export default function VoiceCoach() {
     );
   }
 
-  const status = listening ? 'À l’écoute — parle !' : busy ? 'Le coach réfléchit…' : speaking ? 'Le coach parle…' : 'Appuie et pose ta question';
+  const status = listening ? 'À l’écoute — parle !' : busy ? 'Le coach réfléchit…' : speaking ? 'Le coach parle…' : 'Touche l’orbe et pose ta question';
+  const orbMode = listening ? 'listening' : busy ? 'thinking' : speaking ? 'speaking' : 'idle';
 
   return (
     <div className="live">
-      <div className="live-center">
-        <button
-          className={`mic-btn ${listening ? 'on' : ''}`}
-          onClick={listening ? stopAll : startListening}
-          disabled={busy && !listening}
-          title={listening ? 'Stop' : 'Parler'}
-        >
-          {listening ? '⏹' : '🎙'}
-        </button>
-        <p className="live-status">{status}</p>
+      <div className="orb-stage">
+        <JarvisOrb mode={orbMode} onClick={listening ? stopAll : startListening} />
+        <p className="orb-label">{status}</p>
         {(speaking || busy) && !listening && (
           <button className="btn ghost" onClick={stopAll}>
             Couper la voix
           </button>
         )}
-        {error && <p className="warn-text small">{error}</p>}
+        {error && <p className="warn-text small orb-error">{error}</p>}
       </div>
 
       {messages.length > 0 && (

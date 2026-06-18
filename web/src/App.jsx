@@ -7,6 +7,7 @@ import StatsView from './components/StatsView.jsx';
 import ChatView from './components/ChatView.jsx';
 import AdaptationView from './components/AdaptationView.jsx';
 import HealthView from './components/HealthView.jsx';
+import WeatherChip from './components/WeatherChip.jsx';
 
 const BANNERS = {
   connected: { kind: 'ok', text: 'Strava connecte ✓' },
@@ -51,7 +52,10 @@ export default function App() {
             <p className="subtitle">Suivi d'entrainement + coach IA</p>
           </div>
         </div>
-        <ConnectStrava status={status} onChange={refreshStatus} />
+        <div className="topbar-right">
+          <WeatherChip />
+          <ConnectStrava status={status} onChange={refreshStatus} />
+        </div>
       </header>
 
       <nav className="tabs">

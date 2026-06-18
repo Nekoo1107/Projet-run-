@@ -26,7 +26,7 @@ export default function ConnectStrava({ status, onChange }) {
   }
 
   return (
-    <a className="btn strava" href={connectUrl()}>
+    <a className="btn strava-connect" href={connectUrl()}>
       Se connecter avec Strava
     </a>
   );

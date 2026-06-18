@@ -63,6 +63,7 @@ export const getHealthAlerts = () => req(`${H}/alerts`);
 
 // --- chat coach (Phase 4), streamed text ---
 export const getChatHealth = () => req('/api/chat/health');
+export const postCoachContext = (body) => req('/api/chat/context', { method: 'POST', body });
 
 export async function streamChat(messages, onDelta, signal) {
   const res = await fetch(`${API}/api/chat`, {
