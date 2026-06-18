@@ -51,72 +51,87 @@ export function attachLive(server) {
       }
     });
 
-    const state = { ready: false }; // gate relay until we've chosen a session
-
     try {
       send(ws, { type: 'status', status: 'connecting' });
       const data = await gatherData();
       const systemInstruction = `${SYSTEM_RULES}\n\n${VOICE_INSTRUCTION}\n\n===== DONNÉES DE L'UTILISATEUR =====\n${buildContext(data)}`;
       const AUDIO = Modality?.AUDIO ?? 'AUDIO';
+      const liveConfig = { responseModalities: [AUDIO], systemInstruction }; // minimal = max compat
 
-      // Minimal config = max compatibility across Live models.
-      const liveConfig = { responseModalities: [AUDIO], systemInstruction };
-      const callbacks = {
-        onopen: () => {},
-        onmessage: (msg) => {
-          if (state.ready) relay(ws, msg);
-        },
-        onerror: (e) => {
-          if (state.ready) {
-            console.error('[live] erreur session:', e?.message || e);
-            send(ws, { type: 'error', message: `Gemini Live: ${e?.message || e}` });
-          }
-        },
-        onclose: (e) => {
-          if (state.ready) {
-            const reason = e?.reason || e?.message || '';
-            console.log(`[live] session fermee par Gemini. code=${e?.code ?? '?'} reason="${reason}"`);
-            send(ws, { type: 'closed', code: e?.code, reason });
-            if (!closed) try { ws.close(); } catch { /* ignore */ }
-          }
-        },
-      };
+      // A bad model resolves connect() then closes instantly ("not found ...").
+      // So we only ACCEPT a model that stays open ~1.3 s; otherwise move on.
+      const connectStable = (ai, model) =>
+        new Promise((resolve, reject) => {
+          let settled = false;
+          let committed = false;
+          let sess = null;
+          const fail = (msg) => {
+            if (settled) return;
+            settled = true;
+            try { sess?.close(); } catch { /* ignore */ }
+            reject(new Error(msg));
+          };
+          const cb = {
+            onopen: () => {},
+            onmessage: (msg) => { if (committed) relay(ws, msg); },
+            onerror: (e) => {
+              if (!settled) fail(e?.message || 'erreur');
+              else send(ws, { type: 'error', message: `Gemini Live: ${e?.message || e}` });
+            },
+            onclose: (e) => {
+              const reason = e?.reason || e?.message || `code ${e?.code}`;
+              if (!settled) fail(reason);
+              else {
+                console.log(`[live] session fermee. code=${e?.code ?? '?'} reason="${reason}"`);
+                send(ws, { type: 'closed', code: e?.code, reason });
+                if (!closed) try { ws.close(); } catch { /* ignore */ }
+              }
+            },
+          };
+          ai.live
+            .connect({ model, config: liveConfig, callbacks: cb })
+            .then((s) => {
+              sess = s;
+              session = s; // expose for inbound audio + cleanup
+              setTimeout(() => {
+                if (settled) return;
+                settled = true;
+                committed = true;
+                resolve();
+              }, 1300);
+            })
+            .catch((e) => fail(e?.message || String(e)));
+        });
 
       let chosen = null;
-      const tried = [];
+      let lastDetail = '';
       for (const apiVersion of API_VERSIONS) {
         const ai = new GoogleGenAI({ apiKey: config.geminiApiKey, httpOptions: { apiVersion } });
         for (const model of MODELS) {
           if (closed) return;
           try {
             console.log(`[live] essai ${model} (${apiVersion})…`);
-            session = await ai.live.connect({ model, config: liveConfig, callbacks });
+            await connectStable(ai, model);
             chosen = `${model} (${apiVersion})`;
             break;
           } catch (e) {
-            const msg = e?.message || String(e);
-            tried.push(`${model}/${apiVersion}: ${msg.slice(0, 80)}`);
-            console.error(`[live] ✗ ${model} (${apiVersion}): ${msg}`);
+            lastDetail = `${model}/${apiVersion} → ${(e?.message || e).toString().slice(0, 120)}`;
+            console.error(`[live] ✗ ${lastDetail}`);
+            session = null;
           }
         }
         if (chosen) break;
       }
 
-      if (!chosen || !session) {
+      if (!chosen) {
         send(ws, {
           type: 'error',
-          message:
-            "Aucun modèle Gemini Live n'a pu se connecter sur ta clé. Modèles essayés : " +
-            MODELS.join(', ') +
-            ". Détail du dernier essai : " +
-            (tried[tried.length - 1] || 'inconnu') +
-            '. (Le Live n’est peut-être pas activé sur ta clé gratuite — le mode 🎙 Vocal, lui, marche.)',
+          message: `Aucun modèle Live n'a tenu la connexion. Dernier détail : ${lastDetail || 'inconnu'}.`,
         });
         try { ws.close(); } catch { /* ignore */ }
         return;
       }
 
-      state.ready = true;
       console.log(`[live] connecté ✓ via ${chosen}`);
       send(ws, { type: 'status', status: 'live' });
     } catch (e) {
