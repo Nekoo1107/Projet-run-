@@ -1,15 +1,20 @@
 import { Router } from 'express';
-import { anthropicConfigured } from '../config.js';
+import { chatProvider } from '../config.js';
 import { streamCoachReply } from '../services/coach.js';
+import { streamGeminiReply } from '../services/coachGemini.js';
 
 const router = Router();
 
-router.get('/health', (req, res) => res.json({ configured: anthropicConfigured() }));
+router.get('/health', (req, res) => {
+  const provider = chatProvider();
+  res.json({ configured: Boolean(provider), provider });
+});
 
 // POST /api/chat  body: { messages: [{role, content}, ...] }  → streams text/plain
 router.post('/', async (req, res, next) => {
-  if (!anthropicConfigured()) {
-    return res.status(503).json({ error: 'ANTHROPIC_API_KEY non configuree (server/.env)' });
+  const provider = chatProvider();
+  if (!provider) {
+    return res.status(503).json({ error: 'Aucune cle IA configuree (GEMINI_API_KEY ou ANTHROPIC_API_KEY dans server/.env)' });
   }
   const { messages } = req.body || {};
   if (!Array.isArray(messages) || messages.length === 0) {
@@ -26,7 +31,7 @@ router.post('/', async (req, res, next) => {
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('X-Accel-Buffering', 'no');
   try {
-    await streamCoachReply(clean, res);
+    await (provider === 'gemini' ? streamGeminiReply : streamCoachReply)(clean, res);
     res.end();
   } catch (err) {
     // If nothing streamed yet, surface a JSON error; otherwise close with a marker.

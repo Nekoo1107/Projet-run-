@@ -104,10 +104,13 @@ Onglet **Stats** (Strava connecte requis) : allure à FC comparable (~145 bpm) d
 
 ## Phase 4 — Coach IA
 
-Onglet **Coach IA** : chat avec Claude (`claude-opus-4-8`, réponses **streamées**). À chaque message, le backend envoie en contexte **ton plan + ta semaine en cours + tes runs Strava récents + tes tendances**, et impose les règles de coaching non négociables. Pose des questions du type « est-ce que je progresse ? », « pourquoi ma FC a dérivé hier ? ».
+Onglet **Coach IA** : chat **streamé** où le backend envoie en contexte **ton plan + ta semaine en cours + tes runs Strava récents + tes tendances**, et impose les règles de coaching non négociables. Pose des questions du type « est-ce que je progresse ? », « pourquoi ma FC a dérivé hier ? ».
 
-- Nécessite `ANTHROPIC_API_KEY` dans `server/.env` (depuis https://console.anthropic.com/). Sans clé, l'onglet l'indique.
-- La clé n'est **jamais** en dur ni exposée au frontend ; le SDK la lit dans l'environnement côté serveur.
+Deux fournisseurs possibles (le coach utilise Gemini si sa clé est présente, sinon Anthropic) :
+- **Gemini** (`GEMINI_API_KEY`) — **gratuit** via https://aistudio.google.com/ (modèle `gemini-2.5-flash`). Recommandé.
+- **Anthropic** (`ANTHROPIC_API_KEY`) — Claude `claude-opus-4-8`, facturé au token.
+
+Sans aucune clé, l'onglet l'indique. Les clés ne sont **jamais** en dur ni exposées au frontend (lues côté serveur). La voix temps réel (Gemini Live) est l'étape suivante.
 
 ## Phase 5 — Adaptation temps réel
 

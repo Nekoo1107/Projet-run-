@@ -22,6 +22,7 @@ export const config = {
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
   dbPath: process.env.DB_PATH || './data/app.db',
   anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
+  geminiApiKey: process.env.GEMINI_API_KEY || '',
 };
 
 /** True once Strava credentials are present. */
@@ -32,4 +33,16 @@ export function stravaConfigured() {
 /** True once the Anthropic API key is present (Phase 4 chat). */
 export function anthropicConfigured() {
   return Boolean(config.anthropicApiKey);
+}
+
+/** True once a Gemini API key is present (free-tier coach brain). */
+export function geminiConfigured() {
+  return Boolean(config.geminiApiKey);
+}
+
+/** Which chat provider to use: gemini preferred (free tier), else anthropic. */
+export function chatProvider() {
+  if (geminiConfigured()) return 'gemini';
+  if (anthropicConfigured()) return 'anthropic';
+  return null;
 }

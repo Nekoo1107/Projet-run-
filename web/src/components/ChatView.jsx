@@ -63,9 +63,13 @@ export default function ChatView() {
       <div className="card empty">
         <h2>Coach IA non configuré</h2>
         <p className="muted">
-          Ajoute ta clé <code>ANTHROPIC_API_KEY</code> dans <code>server/.env</code> puis relance le
-          backend. Le coach répond ensuite avec ton plan, tes runs et tes tendances en contexte.
+          Ajoute une clé IA dans <code>server/.env</code> puis relance le backend :
         </p>
+        <ul className="muted" style={{ lineHeight: 1.6 }}>
+          <li><code>GEMINI_API_KEY</code> — gratuit, via <code>aistudio.google.com</code> (recommandé)</li>
+          <li>ou <code>ANTHROPIC_API_KEY</code> — Claude, facturé au token</li>
+        </ul>
+        <p className="muted">Le coach répond ensuite avec ton plan, tes runs et tes tendances en contexte.</p>
       </div>
     );
   }

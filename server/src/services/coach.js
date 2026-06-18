@@ -18,7 +18,7 @@ const paceFromMs = (ms) => (ms ? fmtPace(1000 / ms) : '—');
 
 // 60s cache so a multi-message chat doesn't re-hit Strava on every turn.
 let ctxCache = null;
-async function gatherData() {
+export async function gatherData() {
   if (ctxCache && Date.now() - ctxCache.at < 60000) return ctxCache.data;
   const plan = getPlan();
   const startDate = getSetting('plan_start_date');
@@ -46,7 +46,7 @@ function currentWeekNumber(startDate) {
   return wk >= 1 && wk <= 12 ? wk : null;
 }
 
-function buildContext({ plan, startDate, runs, analytics }) {
+export function buildContext({ plan, startDate, runs, analytics }) {
   const lines = [];
 
   // Plan overview
@@ -94,7 +94,7 @@ function buildContext({ plan, startDate, runs, analytics }) {
   return lines.join('\n');
 }
 
-const SYSTEM_RULES = `Tu es le coach IA personnel d'un coureur, intégré à son app de suivi. Tu réponds en français, de façon concise, concrète et chiffrée, en t'appuyant UNIQUEMENT sur les données ci-dessous. Si une donnée manque, dis-le clairement plutôt que d'inventer.
+export const SYSTEM_RULES = `Tu es le coach IA personnel d'un coureur, intégré à son app de suivi. Tu réponds en français, de façon concise, concrète et chiffrée, en t'appuyant UNIQUEMENT sur les données ci-dessous. Si une donnée manque, dis-le clairement plutôt que d'inventer.
 
 Règles d'entraînement NON NÉGOCIABLES (tu ne proposes jamais quelque chose qui les viole) :
 1. Deloads (semaines 5 et 9) sacrés : jamais supprimés ni alourdis.
