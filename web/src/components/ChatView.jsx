@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { streamChat, getChatHealth } from '../api.js';
+import LiveVoice from './LiveVoice.jsx';
 
 const SUGGESTIONS = [
   'Est-ce que je progresse ?',
@@ -14,6 +15,7 @@ export default function ChatView() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [configured, setConfigured] = useState(null);
+  const [mode, setMode] = useState('text'); // text | voice
   const scrollRef = useRef(null);
 
   useEffect(() => {
@@ -76,7 +78,20 @@ export default function ChatView() {
 
   return (
     <section className="chat">
-      <div className="chat-log" ref={scrollRef}>
+      <div className="mode-toggle">
+        <button className={mode === 'text' ? 'on' : ''} onClick={() => setMode('text')}>
+          💬 Texte
+        </button>
+        <button className={mode === 'voice' ? 'on' : ''} onClick={() => setMode('voice')}>
+          🎙 Vocal (Live)
+        </button>
+      </div>
+
+      {mode === 'voice' ? (
+        <LiveVoice />
+      ) : (
+        <>
+          <div className="chat-log" ref={scrollRef}>
         {messages.length === 0 && (
           <div className="chat-welcome">
             <p className="muted">
@@ -118,6 +133,8 @@ export default function ChatView() {
           {busy ? '…' : 'Envoyer'}
         </button>
       </form>
+        </>
+      )}
     </section>
   );
 }

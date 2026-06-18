@@ -110,7 +110,9 @@ Deux fournisseurs possibles (le coach utilise Gemini si sa clé est présente, s
 - **Gemini** (`GEMINI_API_KEY`) — **gratuit** via https://aistudio.google.com/ (modèle `gemini-2.5-flash`). Recommandé.
 - **Anthropic** (`ANTHROPIC_API_KEY`) — Claude `claude-opus-4-8`, facturé au token.
 
-Sans aucune clé, l'onglet l'indique. Les clés ne sont **jamais** en dur ni exposées au frontend (lues côté serveur). La voix temps réel (Gemini Live) est l'étape suivante.
+Sans aucune clé, l'onglet l'indique. Les clés ne sont **jamais** en dur ni exposées au frontend (lues côté serveur).
+
+**Voix temps réel (Gemini Live)** — dans l'onglet Coach, bascule **🎙 Vocal (Live)** : tu parles au micro, le coach répond de vive voix, en direct. Nécessite `GEMINI_API_KEY`, fonctionne le mieux sur **Chrome** (autoriser le micro). Le backend relaie l'audio via un WebSocket (`/api/live`) — la clé reste côté serveur. Modèle surchageable via `GEMINI_LIVE_MODEL` (défaut `gemini-2.0-flash-live-001`) ; pour une voix plus naturelle, essaie un modèle *native-audio* quand il est dispo sur ta clé.
 
 ## Phase 5 — Adaptation temps réel
 

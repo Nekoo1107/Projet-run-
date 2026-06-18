@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
-import { config, stravaConfigured } from './config.js';
+import http from 'node:http';
+import { config, stravaConfigured, chatProvider } from './config.js';
 import { initDb } from './db.js';
 import authRouter from './routes/auth.js';
 import activitiesRouter from './routes/activities.js';
@@ -9,6 +10,7 @@ import analyticsRouter from './routes/analytics.js';
 import chatRouter from './routes/chat.js';
 import adaptationRouter from './routes/adaptation.js';
 import healthRouter from './routes/health.js';
+import { attachLive } from './live.js';
 
 initDb();
 
@@ -32,13 +34,17 @@ app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
   res.status(status).json({ error: err.message || 'internal_error' });
 });
 
-app.listen(config.port, () => {
+const server = http.createServer(app);
+attachLive(server); // Gemini Live voice relay on ws://.../api/live
+
+server.listen(config.port, () => {
   console.log(`[server] API on http://localhost:${config.port}`);
   console.log(`[server] fichier .env : ${config.envPath} ${config.envFound ? '(trouve)' : '(INTROUVABLE)'}`);
   console.log(
     `[server] STRAVA_CLIENT_ID : ${config.stravaClientId ? 'OK' : 'MANQUANT'}` +
       ` | STRAVA_CLIENT_SECRET : ${config.stravaClientSecret ? 'OK' : 'MANQUANT'}`
   );
+  console.log(`[server] Coach IA : ${chatProvider() || 'aucun (ajoute GEMINI_API_KEY ou ANTHROPIC_API_KEY)'}`);
   console.log(`[server] CORS origin : ${config.frontendUrl}`);
   if (!stravaConfigured()) {
     console.log('[server] ⚠️  Cles Strava manquantes — verifie le fichier .env indique ci-dessus.');
