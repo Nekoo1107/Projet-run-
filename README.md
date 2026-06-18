@@ -16,7 +16,7 @@ Construit par phases. **Tu es a la Phase 1.**
 
 ## Stack
 
-- **Backend** : Node.js + Express (ES modules), OAuth Strava cote serveur, stockage **SQLite** (`better-sqlite3`).
+- **Backend** : Node.js + Express (ES modules), OAuth Strava cote serveur, stockage **SQLite** via le module integre `node:sqlite` (aucune compilation native, aucune dependance a installer). **Node >= 22.5 requis** (teste sur Node 24).
 - **Frontend** : React + Vite.
 - Le frontend parle directement au backend (CORS active). Les tokens Strava restent **cote serveur**, jamais exposes au navigateur.
 

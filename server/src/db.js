@@ -1,16 +1,19 @@
-import Database from 'better-sqlite3';
+import { DatabaseSync } from 'node:sqlite';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { mkdirSync } from 'node:fs';
 import { config } from './config.js';
 
+// We use Node's built-in SQLite (node:sqlite) — no native compilation, no extra
+// dependency, works the same on Windows/macOS/Linux. Requires Node >= 22.5
+// (built-in and flag-free on Node 24). Real SQLite, migratable later.
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // DB path is resolved relative to the server/ folder (one level up from src/).
 const dbPath = resolve(__dirname, '..', config.dbPath);
 mkdirSync(dirname(dbPath), { recursive: true });
 
-const db = new Database(dbPath);
-db.pragma('journal_mode = WAL');
+const db = new DatabaseSync(dbPath);
+db.exec('PRAGMA journal_mode = WAL;');
 
 export function initDb() {
   db.exec(`
