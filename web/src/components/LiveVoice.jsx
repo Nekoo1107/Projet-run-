@@ -23,7 +23,11 @@ export default function LiveVoice() {
   const [status, setStatus] = useState('idle'); // idle | connecting | live | error
   const [error, setError] = useState(null);
   const [transcript, setTranscript] = useState([]);
+  const [log, setLog] = useState([]);
   const ref = useRef({});
+
+  const addLog = (s) =>
+    setLog((l) => [...l.slice(-12), `${new Date().toLocaleTimeString('fr-FR')} ${s}`]);
 
   function pushText(who, text) {
     setTranscript((prev) => {
@@ -49,6 +53,7 @@ export default function LiveVoice() {
 
   function fail(message) {
     ref.current.errored = true;
+    addLog(`échec: ${String(message).slice(0, 80)}`);
     setError((prev) => prev || message);
     setStatus('error');
     teardown();
@@ -64,13 +69,17 @@ export default function LiveVoice() {
   async function start() {
     setError(null);
     setTranscript([]);
+    setLog([]);
     setStatus('connecting');
     ref.current = { errored: false, live: false, nextTime: 0, sources: [] };
+    addLog('micro…');
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      addLog('micro OK');
       const AC = window.AudioContext || window.webkitAudioContext;
       const inputCtx = new AC({ sampleRate: 16000 });
       const outputCtx = new AC({ sampleRate: 24000 });
+      addLog(`WS → ${WS_URL}`);
       const ws = new WebSocket(WS_URL);
       Object.assign(ref.current, { stream, inputCtx, outputCtx, ws });
 
@@ -83,6 +92,7 @@ export default function LiveVoice() {
       ws.onmessage = (ev) => {
         let m;
         try { m = JSON.parse(ev.data); } catch { return; }
+        if (m.type !== 'audio') addLog(`serveur: ${m.type}${m.status ? ' ' + m.status : ''}${m.reason ? ' « ' + m.reason + ' »' : ''}`);
         if (m.type === 'status') {
           if (m.status === 'live') { ref.current.live = true; clearTimeout(ref.current.timer); setStatus('live'); }
         } else if (m.type === 'error') {
@@ -99,13 +109,15 @@ export default function LiveVoice() {
           flushPlayback();
         }
       };
-      ws.onerror = () => fail('Connexion au serveur vocal impossible (backend lancé ?).');
-      ws.onclose = () => {
+      ws.onerror = () => { addLog('WS erreur'); fail('Connexion au serveur vocal impossible (backend lancé ?).'); };
+      ws.onclose = (e) => {
+        addLog(`WS fermé (code ${e?.code ?? '?'})`);
         if (!ref.current.errored) setStatus(ref.current.live ? 'idle' : 'error');
         if (!ref.current.errored && !ref.current.live) setError((p) => p || 'Connexion vocale fermée avant le démarrage.');
       };
 
       ws.onopen = () => {
+        addLog('WS ouvert');
         const source = inputCtx.createMediaStreamSource(stream);
         const proc = inputCtx.createScriptProcessor(4096, 1, 1);
         const silent = inputCtx.createGain();
@@ -183,6 +195,14 @@ export default function LiveVoice() {
         <div className="live-transcript">
           {transcript.map((t, i) => (
             <div key={i} className={`bubble ${t.who === 'you' ? 'user' : 'assistant'}`}>{t.text}</div>
+          ))}
+        </div>
+      )}
+
+      {log.length > 0 && (
+        <div className="live-log">
+          {log.map((l, i) => (
+            <div key={i}>{l}</div>
           ))}
         </div>
       )}
