@@ -11,7 +11,7 @@ Construit par phases. **Tu es a la Phase 1.**
 | **2** | Parsing du plan 12 semaines + vue semaine + check-off + matching Strava + adherence | ✅ ici |
 | **3** | Graphe allure-a-FC + volume vs cible + detection de tendance | ✅ |
 | **4** | Chat IA (API Anthropic) avec mes donnees en contexte | ✅ ici |
-| 5 | Moteur d'adaptation temps reel (regles + propositions IA) | a venir |
+| **5** | Moteur d'adaptation temps reel (regles + propositions IA) | ✅ ici |
 | 6 | Module COROS (HRV/sommeil/recup) + correlations + alertes | a venir |
 
 ## Stack
@@ -108,10 +108,21 @@ Onglet **Coach IA** : chat avec Claude (`claude-opus-4-8`, réponses **streamée
 - Nécessite `ANTHROPIC_API_KEY` dans `server/.env` (depuis https://console.anthropic.com/). Sans clé, l'onglet l'indique.
 - La clé n'est **jamais** en dur ni exposée au frontend ; le SDK la lit dans l'environnement côté serveur.
 
+## Phase 5 — Adaptation temps réel
+
+Onglet **Adaptation** : un moteur de règles **déterministe** analyse ta semaine en cours (réels Strava + statuts + douleur) et propose des **ajustements validables** (Valider / Refuser) qui ne violent JAMAIS les règles de coaching :
+
+- **Surplus** : couru 10 km au lieu de 5 → réduit les séances faciles restantes pour ne pas dépasser le volume hebdo cible.
+- **Séance sautée** : le volume manquant n'est PAS reporté (pas de pic) — progression douce préservée.
+- **Douleur signalée** : course mise en pause (repos/cross-training), reprise seulement après « résolue » confirmé.
+- **Garde-fous** : montée ≤ 15 %/sem après un déficit, deloads S5/S9 sacrés, jamais 3 jours durs d'affilée, alerte si les jours faciles dérivent > 150 bpm.
+
+Les ajustements acceptés deviennent des **overrides** (la vue Plan affiche la cible adaptée + le plan d'origine). « Tout réinitialiser » revient au plan de référence. Pour une analyse en langage naturel, l'onglet Coach IA lit les mêmes données.
+
 ## Notes
 
 - **Scopes Strava** demandes : `read,activity:read_all` (lecture des activites, y compris privees).
-- Le **plan de reference** (`plan/...md`) n'est jamais modifie ; le suivi (statuts de seances, date de depart) est stocke a cote dans SQLite.
+- Le **plan de reference** (`plan/...md`) n'est jamais modifie ; le suivi (statuts, date de depart, overrides d'adaptation, flags de douleur) est stocke a cote dans SQLite.
 - L'access token Strava expire toutes les ~6 h ; le backend le **rafraichit automatiquement** via le refresh token.
 - Les runs incluent les types `Run`, `TrailRun`, `VirtualRun`. Tes activites COROS deja synchronisees vers Strava remontent donc ici sans l'API COROS.
 - **Securite** : aucune cle en dur, tout en variables d'environnement ; tokens stockes dans `server/data/app.db` (git-ignore), exposes nulle part au frontend.

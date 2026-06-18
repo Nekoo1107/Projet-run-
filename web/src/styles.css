@@ -752,3 +752,99 @@ input[type='date'] {
   outline: none;
   border-color: var(--accent);
 }
+
+/* ============ Phase 5: adaptation ============ */
+.adapt.busy {
+  opacity: 0.6;
+  pointer-events: none;
+}
+.adapt > h2 {
+  font-size: 18px;
+  margin: 0 0 12px;
+}
+.section-h {
+  font-size: 15px;
+  margin: 18px 0 8px;
+}
+.adapt-card {
+  margin-bottom: 12px;
+  padding: 14px 16px;
+}
+.adapt-card h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+.pain-form .row {
+  margin-top: 6px;
+}
+.pain-form input,
+.adapt select {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font: inherit;
+}
+.pain-form input {
+  flex: 1;
+  min-width: 180px;
+}
+.alert-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.alert-list li {
+  font-size: 14px;
+  line-height: 1.4;
+}
+.alert-ico {
+  margin-right: 4px;
+}
+.proposal {
+  margin-bottom: 10px;
+  padding: 14px 16px;
+  border-left: 3px solid var(--accent);
+}
+.proposal.pain {
+  border-left-color: #ff6b5b;
+}
+.proposal.ramp {
+  border-left-color: #5dade2;
+}
+.proposal-head {
+  margin-bottom: 4px;
+}
+.changes {
+  list-style: none;
+  margin: 8px 0 12px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.changes code {
+  font-size: 12px;
+}
+.adapted-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(252, 76, 2, 0.12);
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+.linklike {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-decoration: underline;
+}

@@ -5,6 +5,7 @@ import RunsView from './components/RunsView.jsx';
 import PlanView from './components/PlanView.jsx';
 import StatsView from './components/StatsView.jsx';
 import ChatView from './components/ChatView.jsx';
+import AdaptationView from './components/AdaptationView.jsx';
 
 const BANNERS = {
   connected: { kind: 'ok', text: 'Strava connecte ✓' },
@@ -56,6 +57,9 @@ export default function App() {
         <button className={tab === 'plan' ? 'tab active' : 'tab'} onClick={() => setTab('plan')}>
           Plan 12 semaines
         </button>
+        <button className={tab === 'adapt' ? 'tab active' : 'tab'} onClick={() => setTab('adapt')}>
+          Adaptation
+        </button>
         <button className={tab === 'stats' ? 'tab active' : 'tab'} onClick={() => setTab('stats')}>
           Stats
         </button>
@@ -81,6 +85,7 @@ export default function App() {
 
         {!status.loading && !status.unreachable && tab === 'runs' && <RunsView status={status} />}
         {!status.loading && !status.unreachable && tab === 'plan' && <PlanView status={status} />}
+        {!status.loading && !status.unreachable && tab === 'adapt' && <AdaptationView />}
         {!status.loading && !status.unreachable && tab === 'stats' && <StatsView status={status} />}
         {!status.loading && !status.unreachable && tab === 'coach' && <ChatView />}
       </main>

@@ -42,6 +42,15 @@ export const setSessionStatus = (id, body) =>
 // --- analytics (Phase 3) ---
 export const getAnalytics = (days = 120) => req(`/api/analytics?days=${days}`);
 
+// --- adaptation (Phase 5) ---
+export const getAdaptation = () => req('/api/adaptation');
+export const applyAdaptation = (changes) => req('/api/adaptation/apply', { method: 'POST', body: { changes } });
+export const clearAdaptations = (sessionIds) =>
+  req('/api/adaptation/clear', { method: 'POST', body: { sessionIds } });
+export const getHealthFlags = () => req('/api/adaptation/health');
+export const reportPain = (body) => req('/api/adaptation/health', { method: 'POST', body });
+export const resolvePain = () => req('/api/adaptation/health/resolve', { method: 'POST' });
+
 // --- chat coach (Phase 4), streamed text ---
 export const getChatHealth = () => req('/api/chat/health');
 

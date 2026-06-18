@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { getPlan, DAY_ORDER } from '../plan/buildPlan.js';
 import { listRunsBetween } from '../services/strava.js';
-import { getTokens, getAllStatuses, setSessionStatus, getSetting, setSetting } from '../db.js';
+import { getTokens, getAllStatuses, setSessionStatus, getSetting, setSetting, getOverrides } from '../db.js';
 
 const router = Router();
 const VALID_STATUS = new Set(['done', 'modified', 'skipped']);
@@ -57,6 +57,7 @@ router.get('/', async (req, res, next) => {
   try {
     const plan = getPlan();
     const statuses = getAllStatuses();
+    const overrides = getOverrides();
     const startDate = getSetting('plan_start_date');
     const connected = Boolean(getTokens());
 
@@ -93,9 +94,14 @@ router.get('/', async (req, res, next) => {
           const di = DAY_ORDER.indexOf(s.day);
           const date = weekStart ? addDays(weekStart, di) : null;
           const st = statuses[s.id] || null;
+          const ov = overrides[s.id];
+          // Adapted target (Phase 5): an accepted override replaces the planned km.
+          const adapted = ov != null;
+          const targetDistanceKm = adapted ? ov.adaptedKm : s.targetDistanceKm;
+          const isRun = adapted ? targetDistanceKm > 0 : s.isRun;
 
           let matched = null;
-          if (tracking && s.isRun && date) {
+          if (tracking && isRun && date) {
             const onDate = runsByDate.get(date) || [];
             const candidates =
               st?.stravaId != null
@@ -116,6 +122,11 @@ router.get('/', async (req, res, next) => {
           return {
             ...s,
             date,
+            isRun,
+            targetDistanceKm,
+            adapted,
+            originalKm: adapted ? s.targetDistanceKm : null,
+            adaptReason: adapted ? ov.reason : null,
             status: st?.status || null,
             note: st?.note || null,
             matched,

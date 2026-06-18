@@ -52,6 +52,11 @@ export default function SessionRow({ session: s, tracking, onStatus }) {
         </div>
         <div className="sr-meta">
           {target && <span className="sr-target">{target}</span>}
+          {s.adapted && (
+            <span className="adapted-tag" title={s.adaptReason || 'adapté'}>
+              adapté{s.originalKm != null ? ` (plan : ${s.originalKm} km)` : ''}
+            </span>
+          )}
           {s.targetPace && <span className="muted">{s.targetPace}</span>}
           {s.targetHr && <span className="muted">{s.targetHr}</span>}
           {notes.length > 0 && <span className="sr-notes">{notes.join(' · ')}</span>}

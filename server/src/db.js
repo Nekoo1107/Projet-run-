@@ -38,6 +38,25 @@ export function initDb() {
       note         TEXT,
       updated_at   INTEGER NOT NULL
     );
+
+    -- Phase 5: adapted target distances accepted from the adaptation engine
+    CREATE TABLE IF NOT EXISTS session_overrides (
+      session_id   TEXT PRIMARY KEY,
+      adapted_km   REAL NOT NULL,
+      reason       TEXT,
+      updated_at   INTEGER NOT NULL
+    );
+
+    -- Phase 5: pain / injury flags that pause the running build
+    CREATE TABLE IF NOT EXISTS health_flags (
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      area         TEXT,
+      severity     TEXT,
+      note         TEXT,
+      status       TEXT NOT NULL DEFAULT 'active',  -- active | resolved
+      created_at   INTEGER NOT NULL,
+      resolved_at  INTEGER
+    );
   `);
   console.log(`[db] SQLite ready at ${dbPath}`);
 }
@@ -90,6 +109,49 @@ export function setSessionStatus(sessionId, { status, stravaId = null, note = nu
     note,
     updated_at: Math.floor(Date.now() / 1000),
   });
+}
+
+// --- adaptation: session distance overrides ---
+export function getOverrides() {
+  const rows = db.prepare('SELECT * FROM session_overrides').all();
+  const map = {};
+  for (const r of rows) map[r.session_id] = { adaptedKm: r.adapted_km, reason: r.reason };
+  return map;
+}
+
+export function setOverride(sessionId, adaptedKm, reason = null) {
+  db.prepare(
+    `INSERT INTO session_overrides (session_id, adapted_km, reason, updated_at)
+     VALUES (?, ?, ?, ?)
+     ON CONFLICT(session_id) DO UPDATE SET
+       adapted_km = excluded.adapted_km, reason = excluded.reason, updated_at = excluded.updated_at`
+  ).run(sessionId, adaptedKm, reason, Math.floor(Date.now() / 1000));
+}
+
+export function clearOverride(sessionId) {
+  db.prepare('DELETE FROM session_overrides WHERE session_id = ?').run(sessionId);
+}
+
+// --- adaptation: health / pain flags ---
+export function getActiveHealthFlag() {
+  return db.prepare(`SELECT * FROM health_flags WHERE status = 'active' ORDER BY created_at DESC LIMIT 1`).get() || null;
+}
+
+export function listHealthFlags(limit = 20) {
+  return db.prepare('SELECT * FROM health_flags ORDER BY created_at DESC LIMIT ?').all(limit);
+}
+
+export function addHealthFlag({ area = null, severity = null, note = null }) {
+  const info = db
+    .prepare(`INSERT INTO health_flags (area, severity, note, status, created_at) VALUES (?, ?, ?, 'active', ?)`)
+    .run(area, severity, note, Math.floor(Date.now() / 1000));
+  return info.lastInsertRowid;
+}
+
+export function resolveHealthFlags() {
+  db.prepare(`UPDATE health_flags SET status = 'resolved', resolved_at = ? WHERE status = 'active'`).run(
+    Math.floor(Date.now() / 1000)
+  );
 }
 
 /**
